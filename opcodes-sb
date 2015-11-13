@@ -1,0 +1,27 @@
+# format of a line in this file:
+# <instruction name> <args> <opcode>
+#
+# <opcode> is given by specifying one or more range/value pairs:
+# hi..lo=value or bit=value or arg=value (e.g. 6..2=0x45 10=1 rd=0)
+#
+# <args> is one of rd, rs1, rs2, rs3, imm20, imm12, imm12lo, imm12hi,
+# shamtw, shamt, rm
+
+sb_cfg          rs1 imm12                          14..12=0  11..7=0  6..5=0 4..0=0x1F
+sb_stride       rs1 rs2                   31..25=0 14..12=0  11..7=0  6..5=3 4..0=0x1F
+sb_dma_addr     rs1 rs2 bimm12hi bimm12lo          14..12=1           6..5=1 4..0=0x1F
+sb_dma_scr      rs1 rs2 bimm12hi bimm12lo          14..12=2           6..5=1 4..0=0x1F
+sb_scr_rd       rs1     bimm12hi bimm12lo 24..20=0 14..12=3           6..5=1 4..0=0x1F
+sb_dma_rd       rs1 imm12                          14..12=4  11..7=0  6..5=1 4..0=0x1F
+sb_set_iter     rs1                       31..20=0 14..12=1  11..7=0  6..5=3 4..0=0x1F
+sb_const        rs1 imm12                          14..12=5  11..7=0  6..5=1 4..0=0x1F
+sb_wr           imm12                     19..15=0 14..12=0  11..7=0  6..5=2 4..0=0x1F
+sb_wr_scr       rs1     bimm12hi bimm12lo 24..20=0 14..12=1           6..5=2 4..0=0x1F
+sb_wr_dma_addr  rs1 rs2 bimm12hi bimm12lo          14..12=2           6..5=2 4..0=0x1F
+sb_wr_dma       rs1                       31..20=0 14..12=4  11..7=0  6..5=2 4..0=0x1F
+sb_wr_rd        imm12                     19..15=0 14..12=5  11..7=0  6..5=2 4..0=0x1F
+
+
+#sb_wr_dma_addr  rs1 rs2                   31..25=0 14..12=2  11..7=0  6..5=2 4..0=0x1F
+
+
