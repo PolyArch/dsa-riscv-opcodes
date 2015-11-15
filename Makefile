@@ -2,6 +2,8 @@ SHELL := /bin/sh
 
 ISASIM_H := ../riscv-isa-sim/riscv/encoding.h
 ISASIM_HWACHA_H := ../riscv-isa-sim/hwacha/opcodes_hwacha_ut.h
+ISASIM_SOFTBRAIN_H := ../riscv-isa-sim/softbrain/opcodes_softbrain.h
+
 PK_H := ../riscv-pk/pk/encoding.h
 FESVR_H := ../riscv-fesvr/fesvr/encoding.h
 ENV_H := ../riscv-tests/env/encoding.h
@@ -11,12 +13,14 @@ ALL_OPCODES := opcodes-pseudo opcodes opcodes-rvc opcodes-rvc-pseudo opcodes-hwa
 
 SB_OPCODES := opcodes-pseudo opcodes opcodes-rvc opcodes-rvc-pseudo opcodes-custom opcodes-sb
 
-
 install: $(ISASIM_H) $(PK_H) $(FESVR_H) $(ENV_H) $(GAS_H) inst.chisel instr-table.tex priv-instr-table.tex
 
 $(ISASIM_H) $(PK_H) $(FESVR_H) $(ENV_H): $(ALL_OPCODES) parse-opcodes encoding.h
 	cp encoding.h $@
 	cat opcodes opcodes-rvc-pseudo opcodes-rvc | ./parse-opcodes -c >> $@
+
+$(ISASIM_SOFTBRAIN_H): $(ALL_OPCODES) parse-opcodes
+	cat opcodes-sb | ./parse-opcodes -c > $@
 
 $(GAS_H) $(XCC_H): $(ALL_OPCODES) parse-opcodes
 	cat $(SB_OPCODES) | ./parse-opcodes -c > $@
