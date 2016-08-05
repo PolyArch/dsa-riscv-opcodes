@@ -15,6 +15,9 @@ SB_OPCODES := opcodes-pseudo opcodes opcodes-rvc opcodes-rvc-pseudo opcodes-cust
 
 install: $(ISASIM_H) $(PK_H) $(FESVR_H) $(ENV_H) $(GAS_H) $(ISASIM_SOFTBRAIN_H) $(ISASIM_SOFTBRAIN_E) inst.chisel instr-table.tex priv-instr-table.tex
 
+sb-install:  $(ISASIM_SOFTBRAIN_H) $(ISASIM_SOFTBRAIN_E) inst.chisel instr-table.tex priv-instr-table.tex
+
+
 $(ISASIM_H) $(PK_H) $(FESVR_H) $(ENV_H): $(ALL_OPCODES) parse-opcodes encoding.h
 	cp encoding.h $@
 	cat opcodes opcodes-rvc-pseudo opcodes-rvc opcodes-custom | ./parse-opcodes -c >> $@
