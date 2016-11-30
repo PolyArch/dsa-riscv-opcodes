@@ -21,6 +21,8 @@ sb_wr_scr       rs1     bimm12hi bimm12lo 24..20=0 14..12=1           6..5=2 4..
 sb_dma_addr_p   rs1 rs2 bimm12hi bimm12lo          14..12=3           6..5=3 4..2=6 1..0=3  # not in use
 sb_wr_dma       rs1 rs2 bimm12hi bimm12lo          14..12=4           6..5=2 4..2=6 1..0=3  # not in use
 sb_wr_rd        rs1 imm12                          14..12=5  11..7=0  6..5=2 4..2=6 1..0=3 
+sb_ind          rs1 rs2 bimm12hi bimm12lo          14..12=5           6..5=3 4..2=6 1..0=3
+sb_ind_wr       rs1 rs2 bimm12hi bimm12lo          14..12=6           6..5=3 4..2=6 1..0=3
 
 sb_wait         rs1 rs2 bimm12hi bimm12lo          14..12=4           6..5=3 4..2=6 1..0=3
 
