@@ -33,8 +33,6 @@ $(ISASIM_SOFTBRAIN_E): $(ALL_OPCODES) parse-opcodes
 	grep "#define M" >> $@
 	echo "#endif //ENCODINGS_SB" >> $@
 
-
-
 $(GAS_H) $(XCC_H): $(ALL_OPCODES) parse-opcodes
 	cat $(SB_OPCODES) | ./parse-opcodes -c > $@
 
