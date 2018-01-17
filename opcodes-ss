@@ -11,6 +11,7 @@
 sb_cfg          rs1 imm12                          14..12=0  11..7=0  6..5=0 4..2=2 1..0=3
 sb_cfg_port     rs1 rs2 bimm12hi bimm12lo          14..12=1           6..5=0 4..2=2 1..0=3 # new
 sb_ctx          rs1 rs2 bimm12hi bimm12lo          14..12=2           6..5=0 4..2=2 1..0=3 # new
+sb_fill_mode    rs1 rs2 bimm12hi bimm12lo          14..12=3           6..5=0 4..2=2 1..0=3 # new
 sb_stride       rs1 rs2 bimm12hi bimm12lo          14..12=0           6..5=3 4..2=6 1..0=3
 sb_dma_addr     rs1 rs2                   31..25=0 14..12=1  11..7=0  6..5=3 4..2=6 1..0=3
 sb_dma_scr      rs1 rs2 bimm12hi bimm12lo          14..12=0           6..5=1 4..2=2 1..0=3
