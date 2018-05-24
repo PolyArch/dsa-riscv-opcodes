@@ -31,6 +31,7 @@ sb_wr_rd        rs1 imm12                          14..12=5  11..7=0  6..5=2 4..
 sb_ind          rs1 rs2 bimm12hi bimm12lo          14..12=5           6..5=3 4..2=6 1..0=3
 sb_ind_wr       rs1 rs2 bimm12hi bimm12lo          14..12=6           6..5=3 4..2=6 1..0=3
 sb_atom_op      rs1 rs2 bimm12hi bimm12lo          14..12=6           6..5=1 4..2=2 1..0=3
+sb_const_scr    rs1 rs2 bimm12hi bimm12lo          14..12=6           6..5=2 4..2=6 1..0=3
 sb_cfg_ind      rs1 rs2 bimm12hi bimm12lo          14..12=7           6..5=3 4..2=6 1..0=3
 sb_wait         rs1 rs2 bimm12hi bimm12lo          14..12=4           6..5=3 4..2=6 1..0=3
 
