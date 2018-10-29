@@ -31,6 +31,7 @@ ss_atom_op      rs1 rs2 bimm12hi bimm12lo          14..12=6           6..5=1 4..
 ss_const_scr    rs1 rs2 bimm12hi bimm12lo          14..12=6           6..5=2 4..2=6 1..0=3
 ss_cfg_ind      rs1 rs2 bimm12hi bimm12lo          14..12=7           6..5=3 4..2=6 1..0=3
 ss_cfg_atom_op  rs1 rs2 bimm12hi bimm12lo          14..12=7           6..5=2 4..2=6 1..0=3
+ss_wait_df      rs1 imm12                          14..12=3  11..7=0  6..5=3 4..2=6 1..0=3
 ss_wait         rs1 rs2 bimm12hi bimm12lo          14..12=4           6..5=3 4..2=6 1..0=3
 
 #ss_wr_dma_addr  rs1 rs2                   31..25=0 14..12=2  11..7=0  6..5=2 4..0=0x1F
