@@ -196,7 +196,7 @@
   } while(false)
 
 #define SS_REPEAT_PORT(times) \
-  SS_CONFIG_PORT_EXPLICIT((times)*(REPEAT_FXPNT_VAL),0);
+  SS_CONFIG_PORT_EXPLICIT((times)*REPEAT_FXPNT_VAL, 0);
 
 //Write from output to input port
 #define SS_RECURRENCE(output_port, input_port, num_strides) \

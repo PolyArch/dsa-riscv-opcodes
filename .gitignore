@@ -2,3 +2,4 @@
 inst.chisel
 instr-table.tex
 priv-instr-table.tex
+ss_*.h
