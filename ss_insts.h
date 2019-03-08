@@ -187,6 +187,8 @@
 // This tells the port to repeat a certain number of times before consuming
 // This is only really associated with the next command, as this information is forgotten as soon as
 // a command is issued.
+// Assuming stretch of size 10-bits (MSB represents if repeat_times is a port
+// ot number
 #define SS_CONFIG_PORT_EXPLICIT(repeat_times, stretch) \
   __asm__ __volatile__("ss_cfg_port %0, t0, %1" : : "r"(repeat_times), "i"(stretch));
 
@@ -197,6 +199,12 @@
 
 #define SS_REPEAT_PORT(times) \
   SS_CONFIG_PORT_EXPLICIT((times)*REPEAT_FXPNT_VAL, 0);
+
+// data-dependent repeat based on the data in a port
+// only affine read dma->port, scr->port stream
+// Assume the configuration same as the config of times port
+#define SS_VREPEAT_PORT(times_port) \
+  SS_CONFIG_PORT_EXPLICIT(times_port, (1<<10));
 
 //Write from output to input port
 #define SS_RECURRENCE(output_port, input_port, num_strides) \
@@ -276,6 +284,22 @@
 #define SS_INDIRECT(ind_port, addr_offset, num_elem, input_port) \
   __asm__ __volatile__("ss_ind    %0, %1, %2" : : "r"(addr_offset), "r"(num_elem),\
                                                   "i"((input_port<<5) | (ind_port)));
+
+// generated streams are with base_addr = ind_port[i] (offset[col_ind],
+// num_elem=num_elem_port[i] (offset[col_ind+1]-offset[col_ind],
+// stride=sequential?)
+#define SS_INDIRECT_2D(ind_port, addr_offset, num_elem, stride, access_size, num_elem_port, input_port) \
+  __asm__ __volatile__("ss_stride   %0, %1, %2" : : "r"(stride), "r"(access_size), "i"(num_elem_port | (1<<10))); \
+  __asm__ __volatile__("ss_ind    %0, %1, %2" : : "r"(addr_offset), "r"(num_elem),\
+                                                  "i"((input_port<<5) | (ind_port)));
+                                                  // "i"((input_port<<5) | (ind_port) | (1<<9))); \
+
+// This works for only linear scratchpad right now
+#define SS_INDIRECT_SCR_2D(ind_port, addr_offset, num_elem, stride, access_size, num_elem_port, input_port) \
+  __asm__ __volatile__("ss_stride   %0, %1, %2" : : "r"(stride), "r"(access_size), "i"(num_elem_port | (1<<10))); \
+  __asm__ __volatile__("ss_ind    %0, %1, %2" : : "r"(addr_offset), "r"(num_elem),\
+                                                  "i"((1<<10) | (input_port<<5) | (ind_port)));
+
 
 #define SS_INDIRECT_WR(ind_port, addr_offset, num_elem, output_port) \
   __asm__ __volatile__("ss_ind_wr %0, %1, %2" : : "r"(addr_offset), "r"(num_elem),\
