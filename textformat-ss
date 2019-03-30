@@ -17,7 +17,7 @@ ss_rem_port    I s,t,q
 ss_ind         I s,t,q
 ss_ind_wr      I s,t,q
 ss_atom_op     I s,t,q
-# ss_const_scr I s,t
+ss_const_scr   I s,t,q
 ss_cfg_ind     I s,t,q
 ss_cfg_atom_op I s,t,q
 ss_wait        I s,t,q

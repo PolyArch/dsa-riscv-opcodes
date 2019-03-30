@@ -46,6 +46,10 @@
 #define SS_RESET() \
   __asm__ __volatile__("ss_cfg x0, 0")
 
+//Reset all live streams! (after finishing all ports -- config retained)
+#define SS_STREAM_RESET() \
+  __asm__ __volatile__("ss_cfg x0, 1");
+
 //Add duplicate port
 #define SS_ADD_PORT(port) \
   __asm__ __volatile__("ss_add_port x0, x0, %0" : : "i"(port))
@@ -232,18 +236,27 @@
   } while (false)
 
 // Do atomic stream update in scratchpad
+// TODO: make this work with dgra ports as well!
+// at addr port, these are indices, multiplied by output 
+// TODO: adding the capability of being remote...
 #define SS_ATOMIC_SCR_OP(addr_port, val_port, offset, iters, opcode) \
   __asm__ __volatile__("ss_atom_op %0, %1, %2" : : "r"(offset), "r"(iters), "i"((addr_port<<7) | (val_port<<2) | opcode));
 
-
-// Send a constant value, repeated num_elements times to scratchpad
-#define SS_CONST_SCR(scr_addr, val, num_elements) \
+// Send a constant value of width dtype, repeated num_elements times (in sequence) to scratchpad
+#define SS_CONST_SCR(scr_addr, val, num_elements, data_width) \
   __asm__ __volatile__("ss_set_iter %0 " : : "r"(num_elements)); \
-  __asm__ __volatile__("ss_const_scr %0, %1" : : "r"(scr_addr), "r"(val));
+  __asm__ __volatile__("ss_const_scr %0, %1, %2" : : "r"(scr_addr), "r"(val), "i"(data_width));
 
 //Send a constant value, repeated num_elements times to a port
+//FIXME: how to use 11th bit? (doesn't work for T64)
 #define SS_CONST(port, val, num_elements) \
-  __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val), "r"(num_elements), "i"(port)); 
+  __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val), "r"(num_elements), "i"(port|(0<<8))); 
+  // __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val), "r"(num_elements), "i"(port|(4<<8))); 
+
+//Send a constant value, repeated num_elements times to a port, with encoded
+//const_width
+#define SS_DCONST(port, val, num_elements, const_width) \
+  __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val), "r"(num_elements), "i"(port|const_width<<8)); 
 
 //Put a softbrain generated output value to a riscv core variable
 #define SS_RECV(out_port, val) \
@@ -253,8 +266,10 @@
 // Plain Write to Scratch
 #define SS_2D_CONST(port, val1, v1_repeat, val2, v2_repeat, iters) \
   __asm__ __volatile__("ss_set_iter %0 " : : "r"(iters)); \
-  __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val1), "r"(v1_repeat), "i"(port|(1<<7))); \
-  __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val2), "r"(v2_repeat), "i"(port|(1<<6))); 
+  __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val1), "r"(v1_repeat), "i"(port|(1<<7)|(0<<8))); \
+  __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val2), "r"(v2_repeat), "i"(port|(1<<6)|(0<<8))); 
+  // __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val1), "r"(v1_repeat), "i"(port|(1<<7))); \
+  // __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val2), "r"(v2_repeat), "i"(port|(1<<6))); 
 
 
 // This tells the port to repeat a certain number of times before consuming
@@ -344,9 +359,11 @@
   
 //configure the type of indirection -- here multiplier has to be less than 2^7
 //Currently DTYPE MUST be 64 bits
+// mult = struct size, offset list = size of an element inside struct
 #define SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,offset_list)  \
   __asm__ __volatile__("ss_cfg_ind %0, %1, %2" : : "r"(offset_list), "r"(mult), "i"( (itype<<2)  |  (dtype<<0) )  );
 
+// mult=sizeof(datatype), o1 = num_elem_to_move
 #define SS_CONFIG_INDIRECT( itype,dtype,mult)             SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,0) 
 #define SS_CONFIG_INDIRECT1(itype,dtype,mult,o1)          SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,o1) 
 #define SS_CONFIG_INDIRECT2(itype,dtype,mult,o1,o2)       SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,o1 | o2 << 8) 
@@ -378,8 +395,10 @@
   __asm__ __volatile__("ss_ind_wr %0, %1, %2" : : "r"(addr_offset), "r"(num_elem),\
                                                   "i"((output_port<<5) | (ind_port)));
 
+// FIXME: This helps but shouldn't this be automated?
 //Write from output to input port  (type -- 3:8-bit,2:16-bit,1:32-bit,0:64-bit)
 #define SS_INDIRECT_SCR(ind_port, addr_offset, num_elem, input_port) \
+  __asm__ __volatile__("ss_stride   t0, t0, 0"); \
   __asm__ __volatile__("ss_ind    %0, %1, %2" : : "r"(addr_offset), "r"(num_elem),\
                                                   "i"((1<<10) | (input_port<<5) | (ind_port)));
 
@@ -422,14 +441,27 @@
 #define SS_WAIT_SCR_ATOMIC() \
   __asm__ __volatile__("ss_wait t0, t0, 32"); \
 
+// wait on all threads -- stall core
+// TODO: have this use num_threads
+#define SS_GLOBAL_WAIT(num_threads) \
+  __asm__ __volatile__("ss_wait t0, t0, 128"); \
+  // __asm__ __volatile__("ss_wait t0, t0, (num_threads << 7 | 65)"); \
+  // __asm__ __volatile__("ss_wait %0, t0, 128" : : "r"(num_threads)); \ //
+  // register thing is not working
+
+// wait on all threads -- stall core
+#define SS_WAIT_STREAMS() \
+  __asm__ __volatile__("ss_wait t0, t0, 256"); \
 
 
-//Indirect Ports
+
+
+
+//Indirect Ports -- data_width=1 by default
 #define P_IND_1 (31)
 #define P_IND_2 (30)
 #define P_IND_3 (29)
 #define P_IND_4 (28)
-//TODO: make indirect ports also 1-byte
 #define P_IND_5 (27)
 // #define P_IND_6 (26)
 
