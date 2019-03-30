@@ -263,7 +263,7 @@
 // Assuming stretch of size 10-bits (MSB represents if repeat_times is a port
 // ot number
 #define SS_CONFIG_PORT_EXPLICIT(repeat_times, stretch) \
-  __asm__ __volatile__("ss_cfg_port %0, t0, %1" : : "r"(repeat_times), "i"(stretch));
+  __asm__ __volatile__("ss_cfg_port %0, t0, %1" : : "r"(repeat_times), "i"(stretch))
 
 #define SS_CONFIG_PORT(repeat_times, stretch) \
   do { \
@@ -271,7 +271,7 @@
   } while(false)
 
 #define SS_REPEAT_PORT(times) \
-  SS_CONFIG_PORT_EXPLICIT((times)*REPEAT_FXPNT_VAL, 0);
+  SS_CONFIG_PORT_EXPLICIT((times)*REPEAT_FXPNT_VAL, 0)
 
 // data-dependent repeat based on the data in a port
 // only affine read dma->port, scr->port stream
