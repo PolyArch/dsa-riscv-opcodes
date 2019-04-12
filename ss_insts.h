@@ -47,7 +47,55 @@
 
 //Add duplicate port
 #define SS_ADD_PORT(port) \
-  __asm__ __volatile__("ss_add_port x0, x0, %0" : : "i"(port)); 
+  __asm__ __volatile__("ss_add_port x0, x0, %0" : : "i"(port))
+
+#define SS_GARBAGE_GENERAL(output_port, num_elem, elem_size) \
+  do { \
+    int imm = (output_port) << 1; \
+    __asm__ __volatile__("ss_wr_dma %0, %1, %2" : : "r"(0), "r"((num_elem) * (elem_size)), "i"(imm)); \
+  } while (false) 
+
+#define SS_GARBAGE(output_port, num_elem) \
+  SS_GARBAGE_GENERAL(output_port, num_elem, 8)
+
+/* DMA */
+#define SS_DMA_RD_INNER(addr, acc_size, port) \
+  do { \
+    __asm__ __volatile__("ss_dma_rd %0, %1, %2" : : "r"(addr), "r"(acc_size), "i"((port) << 1)); \
+  } while (false)
+
+#define SS_DMA_RD_OUTER(stride, n, stretch) \
+  __asm__ __volatile__("ss_dma_rd %0, %1, %2" : : "r"(stride), "r"(n), "i"((stretch) << 1 | 1))
+
+#define SS_DMA_WR_INNER(addr, acc_size, port) \
+  do { \
+    __asm__ __volatile__("ss_wr_dma %0, %1, %2" : : "r"(addr), "r"(acc_size), "i"((port) << 1)); \
+  } while (false)
+
+#define SS_DMA_WR_OUTER(stride, n, stretch) \
+  __asm__ __volatile__("ss_wr_dma %0, %1, %2" : : "r"(stride), "r"(n), "i"((stretch) << 1 | 1))
+/* DMA End */
+
+/* Scratchpad */
+#define SS_SCR_RD_INNER(addr, acc_size, port) \
+  do { \
+    __asm__ __volatile__("ss_scr_rd %0, %1, %2" : : "r"(addr), "r"(acc_size), "i"((port) << 1)); \
+  } while (false)
+
+#define SS_SCR_RD_OUTER(stride, n, stretch) \
+  __asm__ __volatile__("ss_scr_rd %0, %1, %2" : : "r"(stride), "r"(n), "i"((stretch) << 1 | 1))
+
+#define SS_SCR_WR_INNER(addr, acc_size, port) \
+  do { \
+    __asm__ __volatile__("ss_wr_scr %0, %1, %2" : : "r"(addr), "r"(acc_size), "i"((port) << 1)); \
+  } while (false)
+
+#define SS_SCR_WR_OUTER(stride, n, stretch) \
+  __asm__ __volatile__("ss_wr_scr %0, %1, %2" : : "r"(stride), "r"(n), "i"((stretch) << 1 | 1))
+/* Scrathpad end */
+
+#define SS_SET_ITER(n) \
+  __asm__ __volatile__("ss_set_iter %0 " : : "r"(n))
 
 //Fill the scratchpad from DMA (from memory or cache)
 //Note that scratch_addr will be written linearly
@@ -87,8 +135,17 @@
 
 //Read from scratch into a cgra port
 #define SS_SCR_PORT_STREAM_STRETCH(scr_addr,stride,acc_size,stretch,n_strides, port) \
-  __asm__ __volatile__("ss_stride %0, %1, %2"  : : "r"(stride),   "r"(acc_size),  "i"(stretch)); \
-  __asm__ __volatile__("ss_scr_rd %0, %1, %2 " : : "r"(scr_addr), "r"(n_strides), "i"(port)); 
+  do { \
+    if (acc_size > 0) { \
+      SS_SCR_RD_OUTER(stride, n_strides, stretch); \
+      SS_SCR_RD_INNER(scr_addr, acc_size, port);  \
+    } else { \
+      int _addr = scr_addr + acc_size; \
+      int _outer_cnt = n_strides; \
+      SS_SCR_RD_OUTER(stride, n_strides, stretch); \
+      SS_SCR_RD_INNER(_addr, -acc_size, port);  \
+    } \
+  } while (false)
 
 #define SS_SCR_PORT_STREAM(scr_addr,stride,acc_size,n_strides, port) \
    SS_SCR_PORT_STREAM_STRETCH(scr_addr,stride,acc_size,0,n_strides, port) 
@@ -99,8 +156,10 @@
 
 //Read from DMA into a port
 #define SS_DMA_READ_STRETCH(mem_addr, stride, acc_size, stretch, n_strides, port ) \
-  __asm__ __volatile__("ss_stride %0, %1, %2" : : "r"(stride), "r"(acc_size), "i"(stretch)); \
-  __asm__ __volatile__("ss_dma_rd %0, %1, %2" : : "r"(mem_addr), "r"(n_strides), "i"(port)); 
+  do { \
+    SS_DMA_RD_OUTER(stride, n_strides, stretch); \
+    SS_DMA_RD_INNER(mem_addr, acc_size, port); \
+  } while (false)
 
 #define SS_DMA_READ(mem_addr, stride, acc_size, n_strides, port ) \
   SS_DMA_READ_STRETCH(mem_addr, stride, acc_size, 0, n_strides, port )
@@ -125,16 +184,11 @@
   __asm__ __volatile__("ss_garb   %0, %1, 0" : : "r"(num_garb), "r"(num_garb)); \
 
 // Plain Write to Memory
-#define SS_DMA_WRITE(output_port, stride, access_size, num_strides, mem_addr) \
-  __asm__ __volatile__("ss_stride   %0, %1, 0" : : "r"(stride), "r"(access_size)); \
-  __asm__ __volatile__("ss_wr_dma   %0, %1, %2"   : : "r"(mem_addr), "r"(num_strides), "i"(output_port)); 
-
-// This is for optimizations when core is a bottleneck, break into two commands:
-#define SS_STRIDE_STRETCH(stride, acc_size, stretch) \
- __asm__ __volatile__("ss_stride %0, %1, %2" : : "r"(stride), "r"(acc_size), "i"(stretch));
-
-#define SS_STRIDE(stride, access_size) \
-   SS_STRIDE_STRETCH(stride, access_size, 0)
+#define SS_DMA_WRITE(output_port, stride, acc_size, n_strides, mem_addr) \
+  do { \
+    SS_DMA_WR_OUTER(stride, n_strides, 0); \
+    SS_DMA_WR_INNER(mem_addr, acc_size, output_port); \
+  } while (false)
 
 
 #define SS_DMA_WRITE_SIMP(output_port, num_strides, mem_addr) \
@@ -156,7 +210,9 @@
 // Scratch Oriented Instructions
 // Plain Write to Scratch  
 #define SS_SCR_WRITE(output_port, num_bytes, scr_addr) \
-  __asm__ __volatile__("ss_wr_scr   %0, %1, %2"   : : "r"(scr_addr), "r"(num_bytes), "i"(output_port)); 
+  do { \
+    SS_SCR_WR_INNER(scr_addr, num_bytes, output_port); \
+  } while (false)
 
 // Do atomic stream update in scratchpad
 #define SS_ATOMIC_SCR_OP(addr_port, val_port, offset, iters, opcode) \
