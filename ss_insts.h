@@ -124,7 +124,7 @@
 //  __asm__ __volatile__("ss_scr_dma   %0, %1, %2" : : "r"(num_strides), "r"(scr_addr), "i"(shr));
 
 #define SS_SCRATCH_DMA_STORE_GENERAL(scr_addr, stride, acc_size, num_strides, mem_addr, shr) \
-  SS_SCR_PORT_STREAM_STRETCH(scr_addr,stride,acc_size,0,num_strides, SCR_MEM_PORT) \
+  SS_SCR_PORT_STREAM_STRETCH(scr_addr,stride,acc_size,0,num_strides, SCR_MEM_PORT); \
   SS_DMA_WRITE(SCR_MEM_PORT, acc_size*num_strides, acc_size*num_strides, 1, mem_addr)
 
 #define SS_SCRATCH_DMA_STORE(scr_addr, stride, access_size, num_strides, mem_addr) \
