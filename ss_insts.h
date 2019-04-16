@@ -167,10 +167,6 @@
 #define SS_DMA_READ_SIMP(mem_addr, num_strides, port ) \
   __asm__ __volatile__("ss_dma_rd    %0, %1, %2" : : "r"(mem_addr), "r"(num_strides), "i"(port)); 
 
-//Throw away some outputs.  We will add a proper instruction for this at some point, rather than writing to memory
-#define SS_GARBAGE(output_port, num_elem) \
-  __asm__ __volatile__("ss_stride   %0, %1, 0" : : "r"(8), "r"(8)); \
-  __asm__ __volatile__("ss_wr_dma   %0, %1, %2"   : : "r"(0), "r"(num_elem), "i"(output_port|0x100)); 
 
 //Throw away some outputs.  We will add a proper instruction for this at some point, rather than writing to memory
 #define SS_GARBAGE_SIMP(output_port, num_elem) \
