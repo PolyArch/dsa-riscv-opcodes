@@ -218,7 +218,7 @@
 // Send a constant value, repeated num_elements times to scratchpad
 #define SS_CONST_SCR(scr_addr, val, num_elements) \
   __asm__ __volatile__("ss_set_iter %0 " : : "r"(num_elements)); \
-  __asm__ __volatile__("ss_const_scr %0, %1" : : "r"(scr_addr), "r"(val));
+  __asm__ __volatile__("ss_const_scr %0, %1, zero" : : "r"(scr_addr), "r"(val));
 
 //Send a constant value, repeated num_elements times to a port
 #define SS_CONST(port, val, num_elements) \
@@ -247,7 +247,7 @@
 // Assuming stretch of size 10-bits (MSB represents if repeat_times is a port
 // ot number
 #define SS_CONFIG_PORT_EXPLICIT(repeat_times, stretch) \
-  __asm__ __volatile__("ss_cfg_port %0, t0, %1" : : "r"(repeat_times), "i"(stretch));
+  __asm__ __volatile__("ss_cfg_port %0, t0, %1" : : "r"(repeat_times), "i"((stretch) << 1));
 
 #define SS_CONFIG_PORT(repeat_times, stretch) \
   do { \
@@ -261,7 +261,7 @@
 // only affine read dma->port, scr->port stream
 // Assume the configuration same as the config of times port
 #define SS_VREPEAT_PORT(times_port) \
-  SS_CONFIG_PORT_EXPLICIT(times_port, (1<<10));
+  SS_CONFIG_PORT_EXPLICIT(times_port, 1);
 
 //Write from output to input port
 #define SS_RECURRENCE(output_port, input_port, num_strides) \
