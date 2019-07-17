@@ -308,12 +308,12 @@
 #define SS_XFER_LEFT(output_port, input_port, num_strides) \
   __asm__ __volatile__("ss_wr_rd %0, %1, %2" : : "r"(num_strides), "r"(1), "i"((input_port<<6) | (output_port)));
 #define SS_XFER_RIGHT(output_port, input_port, num_strides) \
-  __asm__ __volatile__("ss_wr_rd %0, %1, %2" : : "r"(num_strides), "r"(2), "i"((input_port<<6) | (output_port)));
+  __asm__ __volatile__("ss_wr_rd %0, %1, %2" : : "r"(num_strides), "r"(2), "i"((input_port<<6) | (output_port)))
 
 #define SS_XFER_LEFT_PAD(output_port, input_port, num_strides) \
   __asm__ __volatile__("ss_wr_rd %0, %1, %2" : : "r"(num_strides), "r"(1 | 4), "i"((input_port<<6) | (output_port)));
 #define SS_XFER_RIGHT_PAD(output_port, input_port, num_strides) \
-  __asm__ __volatile__("ss_wr_rd %0, %1, %2" : : "r"(num_strides), "r"(2 | 4), "i"((input_port<<6) | (output_port)));
+  __asm__ __volatile__("ss_wr_rd %0, %1, %2" : : "r"(num_strides), "r"(2 | 4), "i"((input_port<<6) | (output_port)))
 
 
 // Datatype Encodings
@@ -324,12 +324,12 @@
 
 // currently output and data should be of same type
 #define SS_CONFIG_ATOMIC_SCR_OP(addr_type, val_type, output_type) \
-  __asm__ __volatile__("ss_cfg_atom_op t0, t0, %0" : : "i"( ((val_type<<4)&0x1ADB0 | (output_type<<2)&0x44C | (addr_type)&0x3)));
+  __asm__ __volatile__("ss_cfg_atom_op t0, t0, %0" : : "i"( ((val_type<<4)&0x1ADB0 | (output_type<<2)&0x44C | (addr_type)&0x3)))
   
 //configure the type of indirection -- here multiplier has to be less than 2^7
 //Currently DTYPE MUST be 64 bits
 #define SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,offset_list)  \
-  __asm__ __volatile__("ss_cfg_ind %0, %1, %2" : : "r"(offset_list), "r"(mult), "i"( (itype<<2)  |  (dtype<<0) )  );
+  __asm__ __volatile__("ss_cfg_ind %0, %1, %2" : : "r"(offset_list), "r"(mult), "i"( (itype<<2)  |  (dtype<<0) )  )
 
 #define SS_CONFIG_INDIRECT( itype,dtype,mult)             SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,0) 
 #define SS_CONFIG_INDIRECT1(itype,dtype,mult,o1)          SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,o1) 
@@ -340,7 +340,7 @@
 //Write from output to input port  (type -- 3:8-bit,2:16-bit,1:32-bit,0:64-bit)
 #define SS_INDIRECT(ind_port, addr_offset, num_elem, input_port) \
   __asm__ __volatile__("ss_ind    %0, %1, %2" : : "r"(addr_offset), "r"(num_elem),\
-                                                  "i"((input_port<<5) | (ind_port)));
+                                                  "i"((input_port<<5) | (ind_port)))
 
 // generated streams are with base_addr = ind_port[i] (offset[col_ind],
 // num_elem=num_elem_port[i] (offset[col_ind+1]-offset[col_ind],
