@@ -238,7 +238,7 @@
 //Send a constant value, repeated num_elements times to a port, with encoded
 //const_width
 #define SS_DCONST(port, val, num_elements, const_width) \
-  __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val), "r"(num_elements), "i"(port|const_width<<8));
+  __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val), "r"(num_elements), "i"(port | ((const_width + 1) << 8)));
 
 
 // This tells the port to repeat a certain number of times before consuming
@@ -261,7 +261,7 @@
 // only affine read dma->port, scr->port stream
 // Assume the configuration same as the config of times port
 #define SS_VREPEAT_PORT(times_port) \
-  SS_CONFIG_PORT_EXPLICIT(times_port, 1);
+  __asm__ __volatile__("ss_cfg_port %0, t0, %1" : : "r"(times_port), "i"(1));
 
 //Write from output to input port
 #define SS_RECURRENCE(output_port, input_port, num_strides) \
