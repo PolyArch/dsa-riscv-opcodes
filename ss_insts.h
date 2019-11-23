@@ -78,29 +78,35 @@
 
 /* Scratchpad */
 #define SS_SCR_RD_INNER(addr, acc_size, port) \
-  do { \
-    __asm__ __volatile__("ss_scr_rd %0, %1, %2" : : "r"(addr), "r"(acc_size), "i"((port) << 1)); \
-  } while (false);
+  __asm__ __volatile__("ss_scr_rd %0, %1, %2" : : "r"(addr), "r"(acc_size), "i"((port) << 2))
 
 #define SS_SCR_RD_OUTER(stride, n, stretch) \
-  __asm__ __volatile__("ss_scr_rd %0, %1, %2" : : "r"(stride), "r"(n), "i"((stretch) << 1 | 1))
+  __asm__ __volatile__("ss_scr_rd %0, %1, %2" : : "r"(stride), "r"(n), "i"((stretch) << 2 | 1))
 
 #define SS_SCR_WR_INNER(addr, acc_size, port) \
-  do { \
-    __asm__ __volatile__("ss_wr_scr %0, %1, %2" : : "r"(addr), "r"(acc_size), "i"((port) << 1)); \
-  } while (false);
+  __asm__ __volatile__("ss_wr_scr %0, %1, %2" : : "r"(addr), "r"(acc_size), "i"((port) << 2))
 
 #define SS_SCR_WR_OUTER(stride, n, stretch) \
-  __asm__ __volatile__("ss_wr_scr %0, %1, %2" : : "r"(stride), "r"(n), "i"((stretch) << 1 | 1))
+  __asm__ __volatile__("ss_wr_scr %0, %1, %2" : : "r"(stride), "r"(n), "i"((stretch) << 2 | 1))
 /* Scrathpad end */
+
+/* Implicit Buffer Start*/
+
+#define SS_BUFFET_ALLOCATE(start, buffer_size, total_bytes, port) \
+  __asm__ __volatile__("ss_wr_scr %0, %1, %2" : : "r"(((uint64_t)start << 32ull) | buffer_size), "r"(total_bytes), "i"((port) << 2 | 2))
+
+#define SS_SCR_RD_INNER_BUFFET(size, inport, inport_dtype, shadowport, shadow_dtype) \
+  __asm__ __volatile__("ss_scr_rd %0, %1, %2" : : "r"(shadowport | ((shadow_dtype + 1) << 5) | ((inport_dtype + 1) << 8)), "r"(size), "i"(inport << 2 | 2))
+
+/* Implicit Buffer End*/
 
 #define SS_SET_ITER(n) \
   __asm__ __volatile__("ss_set_iter %0 " : : "r"(n))
 
 //Fill the scratchpad from DMA (from memory or cache)
 //Note that scratch_addr will be written linearly
-//  __asm__ __volatile__("ss_stride    %0, %1, %2" : : "r"(stride), "r"(acc_size), "i"(stretch)); \
-//  __asm__ __volatile__("ss_dma_addr  %0, %1" : : "r"(mem_addr), "r"(mem_addr)); \
+//  __asm__ __volatile__("ss_stride    %0, %1, %2" : : "r"(stride), "r"(acc_size), "i"(stretch));
+//  __asm__ __volatile__("ss_dma_addr  %0, %1" : : "r"(mem_addr), "r"(mem_addr));
 //  __asm__ __volatile__("ss_dma_scr   %0, %1, %2" : : "r"(n_strides), "r"(scr_addr), "i"(shr)); 
 #define SS_DMA_SCRATCH_LOAD_GENERAL(mem_addr, stride, acc_size, stretch, n_strides, scr_addr, shr) \
   SS_DMA_READ_STRETCH(mem_addr, stride, acc_size, stretch, n_strides, MEM_SCR_PORT); \
@@ -230,7 +236,7 @@
   __asm__ __volatile__("ss_recv %0, a0, %1 " : "=r"(val) : "i"(out_port)); 
 
 //Send a constant value, repetated num_elements times to a port
-// Plain Write to Scratch
+//Plain Write to Scratch
 #define SS_2D_CONST(port, val1, v1_repeat, val2, v2_repeat, iters) \
   __asm__ __volatile__("ss_set_iter %0 " : : "r"(iters)); \
   __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val1), "r"(v1_repeat), "i"(port|(1<<7))); \
@@ -241,6 +247,12 @@
 #define SS_DCONST(port, val, num_elements, const_width) \
   __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val), "r"(num_elements), "i"(port | ((const_width + 1) << 8)));
 
+//Send a constant value, repetated num_elements times to a port
+//Plain Write to Scratch
+#define SS_2D_DCONST(port, val1, v1_repeat, val2, v2_repeat, iters, dtype) \
+  __asm__ __volatile__("ss_set_iter %0 " : : "r"(iters)); \
+  __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val1), "r"(v1_repeat), "i"(port|(1<<7) | ((dtype+1) << 8))); \
+  __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val2), "r"(v2_repeat), "i"(port|(1<<6) | ((dtype+1) << 8))); 
 
 // This tells the port to repeat a certain number of times before consuming
 // This is only really associated with the next command, as this information is forgotten as soon as
@@ -329,11 +341,11 @@
 #define SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,offset_list)  \
   __asm__ __volatile__("ss_cfg_ind %0, %1, %2" : : "r"(offset_list), "r"(mult), "i"( (itype<<2)  |  (dtype<<0) )  )
 
-#define SS_CONFIG_INDIRECT( itype,dtype,mult)             SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,0) 
-#define SS_CONFIG_INDIRECT1(itype,dtype,mult,o1)          SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,o1) 
-#define SS_CONFIG_INDIRECT2(itype,dtype,mult,o1,o2)       SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,o1 | o2 << 8) 
-#define SS_CONFIG_INDIRECT3(itype,dtype,mult,o1,o2,o3)    SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,o1 | o2 << 8 | o3 << 16) 
-#define SS_CONFIG_INDIRECT4(itype,dtype,mult,o1,o2,o3,o4) SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,o1 | o2 << 8 | o3 << 16 | o4 << 24) 
+#define SS_CONFIG_INDIRECT(itype,dtype,mult)              SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,0)
+#define SS_CONFIG_INDIRECT1(itype,dtype,mult,o1)          SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,o1)
+#define SS_CONFIG_INDIRECT2(itype,dtype,mult,o1,o2)       SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,o1 | o2 << 8)
+#define SS_CONFIG_INDIRECT3(itype,dtype,mult,o1,o2,o3)    SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,o1 | o2 << 8 | o3 << 16)
+#define SS_CONFIG_INDIRECT4(itype,dtype,mult,o1,o2,o3,o4) SS_CONFIG_INDIRECT_GENERAL(itype,dtype,mult,o1 | o2 << 8 | o3 << 16 | o4 << 24)
 
 //Write from output to input port  (type -- 3:8-bit,2:16-bit,1:32-bit,0:64-bit)
 #define SS_INDIRECT(ind_port, addr_offset, num_elem, input_port) \
