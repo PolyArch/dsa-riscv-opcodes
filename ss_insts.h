@@ -216,12 +216,13 @@
   __asm__ __volatile__("ss_atom_op %0, %1, %2" : : "r"(offset), "r"(iters), "i"((addr_port<<7) | (val_port<<2) | opcode));
 
 
-// Send a constant value, repeated num_elements times to scratchpad
-#define SS_CONST_SCR(scr_addr, val, num_elements) \
+// Send a constant value of width dtype, repeated num_elements times (in sequence) to scratchpad
+#define SS_CONST_SCR(scr_addr, val, num_elements, data_width) \
   __asm__ __volatile__("ss_set_iter %0 " : : "r"(num_elements)); \
-  __asm__ __volatile__("ss_const_scr %0, %1, zero" : : "r"(scr_addr), "r"(val));
+  __asm__ __volatile__("ss_const_scr %0, %1, %2" : : "r"(scr_addr), "r"(val), "i"(data_width));
 
 //Send a constant value, repeated num_elements times to a port
+// NOTE: Do not use ss_const for non-64-bit ports
 #define SS_CONST(port, val, num_elements) \
   __asm__ __volatile__("ss_const %0, %1, %2 " : : "r"(val), "r"(num_elements), "i"(port|(0<<8))); 
 
@@ -337,6 +338,7 @@
 
 //Write from output to input port  (type -- 3:8-bit,2:16-bit,1:32-bit,0:64-bit)
 #define SS_INDIRECT(ind_port, addr_offset, num_elem, input_port) \
+  __asm__ __volatile__("ss_stride   %0, %1, %2" : : "r"(8), "r"(8), "i"((0<<10))); \
   __asm__ __volatile__("ss_ind    %0, %1, %2" : : "r"(addr_offset), "r"(num_elem),\
                                                   "i"((input_port<<5) | (ind_port)))
 
@@ -369,6 +371,10 @@
   __asm__ __volatile__("ss_ind_wr %0, %1, %2" : : "r"(addr_offset), "r"(num_elem),\
                                                   "i"((1<<10) | (output_port<<5) | (ind_port)));
 
+//Reset all live streams! (after finishing all ports -- config retained)
+#define SS_STREAM_RESET() \
+  __asm__ __volatile__("ss_cfg x0, 1");
+
 //Wait on N number of remote scratchpad writes (num_bytes)
 #define SS_WAIT_DF(num_rem_writes, scratch_type) \
   __asm __volatile__("ss_wait_df %0, %1" : : "r"(num_rem_writes), "i"(scratch_type));
@@ -393,6 +399,10 @@
 #define SS_WAIT_SCR_RD() \
   __asm__ __volatile__("ss_wait t0, t0, 4"); \
 
+//wait for all prior scratch reads to be complete
+#define SS_GLOBAL_WAIT() \
+  __asm__ __volatile__("ss_wait t0, t0, 128"); \
+
 //wait for all prior scratch reads to be complete (NOT IMPLEMENTED IN SIMULTOR YET)
 #define SS_WAIT_SCR_RD_QUEUED() \
   __asm__ __volatile__("ss_wait t0, t0, 8"); \
@@ -404,6 +414,14 @@
 #define SS_WAIT_SCR_ATOMIC() \
   __asm__ __volatile__("ss_wait t0, t0, 32"); \
 
+// wait on all threads -- stall core
+// TODO: have this use num_threads
+// #define SS_GLOBAL_WAIT(num_threads) \
+//  __asm__ __volatile__("ss_wait t0, t0, 128"); \
+
+// wait on all threads -- stall core
+#define SS_WAIT_STREAMS() \
+  __asm__ __volatile__("ss_wait t0, t0, 256"); \
 
 
 //Indirect Ports
